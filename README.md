@@ -13,26 +13,34 @@ Executing `hciconfig -a hci0 features` should list `<LE support>`. If not, get a
 Next, find the bluetooth address of your SensorTag by using `hcitool -i hci0 lescan`. It should be listed as a `CC2650 SensorTag`. This is the bluetooth address you will use for everything.
 
 The sensortag library provides following sensors:
+```
     "temperature", "humidity", "barometer", "imu", "optical"
+```
 
 To use it in your code, initialize an instance with the bluetooth address:
+```
     example: tag = SensorTag("AA:BB:CC:AA:BB:CC")
-
+```
 Then enable the desired sensors:
+```
     tag.enable("temperature")
     tag.enable("humidity")
     ...
+```
 
-Then call 'start' with a callback function. The callback function
-    receives a tuple t for every new notification from device, with 
+Then call `start` with a callback function. The callback function
+    receives a tuple `t` for every new notification from device, with 
+```
         t[0] = name of the sensor
         t[1] = processed sensor reading
         t[2] = raw sensor reading as returned by the sensortag
-
+```
 A simple example to just print the data is as follows
+```
     def callback(t):
         print t
 
     tag.start(callback)
+```
 
 To see a sample, execute `python sensortag.py <bluetooth-address>`.
