@@ -1,38 +1,38 @@
-ble-sensor-pi
+SensorTag 2.0
 =============
 
-Simple example for SensorTag with RaspberryPi a Bluetooth Low Engery (BLE GATT) device.
+A simple python wrapper around BlueZ/GATTTool to talk to a TI SensorTag v2.0. 
+**Use this code at your own risk.**
 
-See sensortag/sensortag_test.py for a simple example of reading temperature values from the tag. The same approach could be used to read any of the sensors.  It's also possible to have the tag send a stream of measurements at regular intervals.  See the information here -
-  http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
-Or wait for me to add more examples.
+To use this, first make sure that you have the appropriate software installed. I use bluez version 4.101-0ubuntu13.1 on my Ubuntu 14.04 laptop. 
 
-This code was thrown together quickly to see how easy it might be to use these devices with the RaspberryPi.  It proved to be very easy - though I struggled to find much information on BLE on Linux.  Other relevant search terms are GATT.
+Of course, you will need some bluetooth LE capable hardware too. I got a Bluetooth Adapter by Medialink from Amazon that is capable of talking to this. To check if your existing hardware supports LE: Use `hcitool dev` to see a list of bluetooth devices. You will see your devices as `hci0`, `hci0`, and so on (in case you have multiple bluetooth devices. Replace `hci0` with whatever you want to use from now on.
 
-I'll post more information on my blog at http://mike.saunby.net
+Executing `hciconfig -a hci0 features` should list `<LE support>`. If not, get a bluetooth USB dongle that supports LE.
 
-You will almost certainly need to install a newer version of gatttool for this code to work.  Bluez-5.2 and later are known to work. It's probably best to download and install the latest version of Bluez.
+Next, find the bluetooth address of your SensorTag by using `hcitool -i hci0 lescan`. It should be listed as a `CC2650 SensorTag`. This is the bluetooth address you will use for everything.
 
-Once unpacked do the following -
+The sensortag library provides following sensors:
+    "temperature", "humidity", "barometer", "imu", "optical"
 
-    ./configure --disable-systemd
-    make
-    sudo make install
-    sudo /usr/bin/install -c attrib/gatttool /usr/local/bin/gatttool
+To use it in your code, initialize an instance with the bluetooth address:
+    example: tag = SensorTag("AA:BB:CC:AA:BB:CC")
 
-You're also going to need to install the python pexpect library -
+Then enable the desired sensors:
+    tag.enable("temperature")
+    tag.enable("humidity")
+    ...
 
-    sudo pip install pexpect
+Then call 'start' with a callback function. The callback function
+    receives a tuple t for every new notification from device, with 
+        t[0] = name of the sensor
+        t[1] = processed sensor reading
+        t[2] = raw sensor reading as returned by the sensortag
 
-To enable the bluetooth adaptor and find your SensorTag device address do the following -
+A simple example to just print the data is as follows
+    def callback(t):
+        print t
 
-    sudo hciconfig hci0 up
-    sudo hcitool lescan 
+    tag.start(callback)
 
-Press the side button and you should get a couple of lines showing the device is working. Hit Ctrl-C to exit.  Now you're ready to go -
-
-    python sensortag.py [ADDRESS]
-
-
-I've put this code under the Apache 2.0 licence, if folks want to use it and that 
-doesn't suit let me know.  I have no desire to profit from this code, nor prevent others using or profiting if they wish.  Equally you shouldn't expect me to maintain or support it.  It's just stuff, use it as you wish.
+To see a sample, execute `python sensortag.py <bluetooth-address>`.
