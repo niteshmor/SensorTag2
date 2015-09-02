@@ -42,6 +42,9 @@ class SensorTag:
         tag.enable("humidity")
         ...
 
+    You can optionally pass the time-period (in ms) between notifications from
+        a particular sensor as the second argument to 'enable'.
+
     Then call 'start' with a callback function. The callback function
         receives a tuple t for every new notification from device, with 
             t[0] = name of the sensor
@@ -59,14 +62,15 @@ class SensorTag:
 
     # each tuple is 
     #   (<data-handle>, <notif-handle>, <notif-enable-val>, <notif-disable-val>, 
-    #    <config-handle>, <enable-value>, <disable-value>, <period-handle>)
+    #    <config-handle>, <enable-value>, <disable-value>, <period-handle>,
+    #    <min-period>, <max-period>)
 
     sensors = {
-        "temperature" : ( 0x21, 0x22, '0100', '0000', 0x24, '01',   '00', 0x26 ),
-        "humidity"    : ( 0x29, 0x2A, '0100', '0000', 0x2C, '01',   '00', 0x2E ),
-        "barometer"   : ( 0x31, 0x32, '0100', '0000', 0x34, '01',   '00', 0x36 ),
-        "imu"         : ( 0x39, 0x3A, '0100', '0000', 0x3C, '7F00', '00', 0x3E ),
-        "optical"     : ( 0x41, 0x42, '0100', '0000', 0x44, '01',   '00', 0x46 )
+        "temperature" : ( 0x21, 0x22, '0100', '0000', 0x24, '01',   '00', 0x26, 300, 2550 ),
+        "humidity"    : ( 0x29, 0x2A, '0100', '0000', 0x2C, '01',   '00', 0x2E, 100, 2550 ),
+        "barometer"   : ( 0x31, 0x32, '0100', '0000', 0x34, '01',   '00', 0x36, 100, 2550 ),
+        "imu"         : ( 0x39, 0x3A, '0100', '0000', 0x3C, '7F00', '00', 0x3E, 100, 2550 ),
+        "optical"     : ( 0x41, 0x42, '0100', '0000', 0x44, '01',   '00', 0x46, 100, 2550 )
     }
 
     @staticmethod
@@ -112,17 +116,24 @@ class SensorTag:
         self.data = {}
 
 
-    def enable_sensor(self, s):
+    def enable_sensor(self, s, period=0):
         """
         Enable a particular sensor. For now, we only support the notification
             mode.
         Valid sensors are: 
             "temperature", "humidity", "barometer", "imu", "optical"
+        If a value for period (ms) is provided, the notification frequency is set 
+            accordingly. For all the sensors, resolution is 10ms.
         """
         assert s in self.sensors
 
         self.char_write_cmd(self.sensors[s][1], self.sensors[s][2])
         self.char_write_cmd(self.sensors[s][4], self.sensors[s][5])
+
+        if period!=0:
+            assert self.sensors[s][8]<=period<=self.sensors[s][9]
+            hex_period = "{0:#04x}".format(period/10)[2:]
+            self.char_write_cmd(self.sensors[s][7], hex_period) 
 
 
     def char_write_cmd( self, handle, value ):
